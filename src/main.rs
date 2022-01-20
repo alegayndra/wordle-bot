@@ -1,8 +1,8 @@
 use rand::Rng;
 use std::collections::HashMap;
+use std::fs;
 
-const LETTERS: [&str; 26] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
-const WORDS: [&str; 12] = ["point", "proxy", "blaze", "kinky", "saber", "loose", "goofy", "abuse", "adult", "award", "basis", "beach"];
+pub const LETTERS: [&str; 26] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
 
 /*
   'c' = correct
@@ -38,7 +38,6 @@ fn filter_words(mut words: Vec<String>, letters: &HashMap<String, (char, Vec<i32
   words
 }
 
-
 fn filter_letters(word: &String, correct_word: &String, mut letters: HashMap<String, (char, Vec<i32>)>) -> HashMap<String, (char, Vec<i32>)> {
   for w in word.as_bytes() {
     let mut is_in_word = false;
@@ -73,6 +72,23 @@ fn filter_letters(word: &String, correct_word: &String, mut letters: HashMap<Str
   letters
 }
 
+fn read_file() -> Vec<String> {
+  let arch = "src/words.txt";
+  let mut words: Vec<String> = vec![];
+
+  let contents = fs::read_to_string(arch).expect("Something went wrong reading the file");
+
+  // println!("With text:\n{}", contents);
+
+  for line in contents.lines() {
+    // do something with line
+    // println!("{}", line);
+    words.push(line.to_string());
+  }
+
+  words
+}
+
 fn wordle() {
   // let mut letters: Vec<(String, char)> = vec![];
   let mut letters: HashMap<String, (char, Vec<i32>)> = HashMap::new();
@@ -80,10 +96,7 @@ fn wordle() {
     letters.insert(letter.to_string(), ('w', vec![]));
   }
 
-  let mut words: Vec<String> = vec![];
-  for word in WORDS {
-    words.push(word.to_string());
-  }
+  let mut words: Vec<String> = read_file();
 
   // println!("words {:?}", words);
 
