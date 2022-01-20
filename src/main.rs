@@ -10,7 +10,9 @@ pub const LETTERS: [&str; 26] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j
   'n' = no
   'w' = who knows
 */
-fn filter_words(mut words: Vec<String>, letters: &HashMap<String, (char, Vec<i32>)>) -> Vec<String> {
+fn filter_words(mut words: Vec<String>, letters: &HashMap<String, (char, Vec<i32>)>, pos: usize) -> Vec<String> {
+
+  words.remove(pos);
   for l in LETTERS {
     match letters.get(&l.to_string()) {
       Some((c, v)) => {
@@ -78,11 +80,7 @@ fn read_file() -> Vec<String> {
 
   let contents = fs::read_to_string(arch).expect("Something went wrong reading the file");
 
-  // println!("With text:\n{}", contents);
-
   for line in contents.lines() {
-    // do something with line
-    // println!("{}", line);
     words.push(line.to_string());
   }
 
@@ -103,7 +101,7 @@ fn wordle() {
   let mut rng = rand::thread_rng();
   let mut pos: usize;
 
-  let correct_word = words[5].clone(); // loose
+  let correct_word: String = "robot".to_string(); // loose
   // println!("correct_word {:?}\n", correct_word);
 
   let mut word: String;
@@ -116,7 +114,7 @@ fn wordle() {
     pos = rng.gen_range(0..words.len());
     word = words[pos].clone();
 
-    println!("random word generated {:?}\n", word);
+    // println!("random word generated {:?} {}\n", word, pos);
 
     if word == correct_word {
       break;
@@ -128,7 +126,7 @@ fn wordle() {
     
     // println!("letters filtered{:?}", letters);
 
-    words = filter_words(words,&letters);
+    words = filter_words(words, &letters, pos);
 
     // println!("words filtered {:?}", words);
   }
