@@ -1,6 +1,7 @@
 use rand::Rng;
 use std::collections::HashMap;
 use std::fs;
+use priority_queue::PriorityQueue;
 
 pub const LETTERS: [&str; 26] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
 
@@ -10,68 +11,50 @@ pub const LETTERS: [&str; 26] = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j
   'n' = no
   'w' = who knows
 */
-fn filter_words(mut words: Vec<String>, letters: &HashMap<String, (char, Vec<i32>)>, pos: usize) -> Vec<String> {
+fn filter_words(mut words: PriorityQueue<String, i32>, word: String, correct_word: &String) -> PriorityQueue<String, i32> {
+  let mut arr: Vec<i32> = vec![0, 0, 0, 0, 0];
 
-  words.remove(pos);
-  for l in LETTERS {
-    match letters.get(&l.to_string()) {
-      Some((c, v)) => {
-        match c {
-          'c' => {
-            for i in v {
-              words.retain(|word| word.chars().nth(*i as usize).unwrap().to_string() == l.to_string());
-            }
-            // println!("letter correct {} {:?}", l, words);
-          },
-          'n' => {
-            words.retain(|word| !word.contains(l));
-            // println!("letter incorrect {} {:?}", l, words);
-          },
-          'u' => {
-            words.retain(|word| {word.contains(l)});
-            // println!("letter other {} {:?}", l, words);
-          },
-          _ => {}
-        };
-      },
-      None => println!("")
-    };
+  for (index, character) in word.chars().enumerate() {
+    println!("{}, {}", index, character);
+    if correct_word.contains(character) {
+      println!("word contains {}, {}", correct_word.chars().nth(index).unwrap(), character);
+      if correct_word.chars().nth(index).unwrap() == character {
+        arr[index] = 2;
+      } else {
+        arr[index] = 1;
+      }
+    }
   }
+
+  println!("{}, {}, {:?}", correct_word, word, arr);
+
+  for (w, score) in words.iter_mut() {
+    *score = 0;
+
+    for i in 0..4 {
+      if w.chars().nth(i).unwrap() == w.chars().nth(i).unwrap() {
+        *score += arr[i];
+      }
+    }
+    
+    // for (index, character) in word.chars().enumerate() {
+    //   // do something with character `c` and index `i`
+    //   if w.contains(character) {
+    //     *score += 1;
+
+    //   }
+    //   // for (w_i, w_c) in w.chars().enumerate() {
+    //   //   if word_c == w_c {
+    //   //     *score += 1;
+    //   //     if word_i == w_i {
+    //   //       *score += 1;
+    //   //     }
+    //   //   }
+    //   // }
+    // }
+  }
+  
   words
-}
-
-fn filter_letters(word: &String, correct_word: &String, mut letters: HashMap<String, (char, Vec<i32>)>) -> HashMap<String, (char, Vec<i32>)> {
-  for w in word.as_bytes() {
-    let mut is_in_word = false;
-    for c in correct_word.as_bytes() {
-      if w == c {
-        letters.remove(&(*w as char).to_string());
-        letters.insert((*w as char).to_string().clone(), ('u', vec![]));
-        is_in_word = true;
-      }
-    }
-    if !is_in_word {
-      letters.remove(&(*w as char).to_string());
-      letters.insert((*w as char).to_string().clone(), ('n', vec![]));
-    }
-  }
-
-  for i in 0..5 {
-    let l = word.as_bytes()[i];
-    if l == correct_word.as_bytes()[i] {
-      if letters.contains_key(&(l as char).to_string()) {
-        let mut vec_pos: Vec<i32> = match letters.get(&(l as char).to_string()) {
-          Some((_, v)) => v.clone(),
-          None => vec![]
-        };
-        vec_pos.push(i as i32);
-        letters.remove(&(l as char).to_string());
-        letters.insert((l as char).to_string().clone(), ('c', vec_pos));
-      }
-    }
-  }
-
-  letters
 }
 
 fn read_file() -> Vec<String> {
@@ -88,20 +71,13 @@ fn read_file() -> Vec<String> {
 }
 
 fn wordle() {
-  // let mut letters: Vec<(String, char)> = vec![];
-  let mut letters: HashMap<String, (char, Vec<i32>)> = HashMap::new();
-  for letter in LETTERS {
-    letters.insert(letter.to_string(), ('w', vec![]));
+  let mut pq = PriorityQueue::new();
+
+  for word in read_file() {
+    pq.push(word.clone(), 0);
   }
 
-  let mut words: Vec<String> = read_file();
-
-  // println!("words {:?}", words);
-
-  let mut rng = rand::thread_rng();
-  let mut pos: usize;
-
-  let correct_word: String = "robot".to_string(); // loose
+  let correct_word: String = "crazy".to_string(); // loose
   // println!("correct_word {:?}\n", correct_word);
 
   let mut word: String;
@@ -109,24 +85,35 @@ fn wordle() {
   println!("start");
   let mut tries: i32 = 0;
   loop {
+    
     // println!("loop");
     tries += 1;
-    pos = rng.gen_range(0..words.len());
-    word = words[pos].clone();
+    word = match pq.peek() {
+      Some(value) => {
+        println!("{:?}", value.clone());
+        value.0.clone()
+      },
+      None => {
+        println!("queue empty");
+        return
+      }
+    };
 
     // println!("random word generated {:?} {}\n", word, pos);
 
-    if word == correct_word {
+    if word == correct_word || tries >= 6 {
       break;
     }
-
-    // println!("not correct word");
-
-    letters = filter_letters(&word, &correct_word, letters);
+    
+    pq.pop();
     
     // println!("letters filtered{:?}", letters);
 
-    words = filter_words(words, &letters, pos);
+    pq = filter_words(pq, word, &correct_word);
+
+    // println!("{:?}", pq);
+
+    println!("{}", pq.is_empty());
 
     // println!("words filtered {:?}", words);
   }
